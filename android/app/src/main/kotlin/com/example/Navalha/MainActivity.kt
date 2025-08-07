@@ -1,4 +1,4 @@
-package com.example.app_barbearia
+package com.example.navalha
 
 import io.flutter.embedding.android.FlutterActivity
 
