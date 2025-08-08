@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "601425743336",
+    "project_id": "navalha-9d119",
+    "storage_bucket": "navalha-9d119.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:601425743336:android:916fd901f768bc08d0a85d",
+        "android_client_info": {
+          "package_name": "com.cortex.navalha"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0-YMLHCeMJ3ZOiYQnblTWO3zqzD20VDc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
