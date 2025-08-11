@@ -7,6 +7,10 @@ import 'screens/homecliente.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // Sem opções específicas
+  runApp(const Navalha());
+
   if (!kIsWeb) {
     try {
       await Firebase.initializeApp();
@@ -37,3 +41,4 @@ class Navalha extends StatelessWidget {
     );
   }
 }
+
