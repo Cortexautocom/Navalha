@@ -1,27 +1,21 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'firebase_options.dart';
 import 'screens/homecliente.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Sem opções específicas
-  runApp(const Navalha());
+  // Inicializa o Firebase usando as opções corretas
+  print('🔥 FirebaseOptions: ${DefaultFirebaseOptions.currentPlatform}');
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  if (!kIsWeb) {
-    try {
-      await Firebase.initializeApp();
-      debugPrint('✅ Firebase inicializado com sucesso');
-
-      FirebaseAnalytics analytics = FirebaseAnalytics.instance;
-      analytics.logEvent(name: 'teste_inicializacao');
-    } catch (e) {
-      debugPrint('❌ Erro ao inicializar Firebase: $e');
-    }
-  }
+  // Inicializa o Analytics (opcional, mas útil para depuração)
+  FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+  await analytics.logEvent(name: 'app_iniciado');
 
   runApp(const Navalha());
 }
@@ -41,4 +35,3 @@ class Navalha extends StatelessWidget {
     );
   }
 }
-
