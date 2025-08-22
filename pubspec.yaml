@@ -11,10 +11,20 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Ícones padrão iOS
   cupertino_icons: ^1.0.8
+
+  # Firebase (núcleo)
   firebase_core: ^2.30.0
+
+  # Firebase Analytics
   firebase_analytics: ^10.10.0
-  cloud_firestore: ^4.13.0 # ou a versão mais recente
+
+  # Autenticação (login/cadastro)
+  firebase_auth: ^4.17.0
+
+  # Firestore (banco de dados)
+  cloud_firestore: ^4.15.8
 
 dev_dependencies:
   flutter_test:

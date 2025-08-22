@@ -5,40 +5,30 @@ class PainelAdmin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Lista de agendamentos fictícios (para teste visual)
-    final List<Map<String, String>> agendamentos = [
-      {
-        'cliente': 'João Silva',
-        'profissional': 'Anderson',
-        'data': '07/08/2025',
-        'hora': '14:00',
-      },
-      {
-        'cliente': 'Maria Souza',
-        'profissional': 'Carlos',
-        'data': '07/08/2025',
-        'hora': '15:30',
-      },
-    ];
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Painel do Administrador'),
-      ),
-      body: ListView.builder(
-        itemCount: agendamentos.length,
-        itemBuilder: (context, index) {
-          final agendamento = agendamentos[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(agendamento['cliente']!),
-              subtitle: Text(
-                  '${agendamento['profissional']} • ${agendamento['data']} às ${agendamento['hora']}'),
-              trailing: const Icon(Icons.check_circle_outline),
+      appBar: AppBar(title: const Text('Painel do Administrador')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // Filtros de pesquisa
+            Row(
+              children: const [
+                Expanded(child: TextField(decoration: InputDecoration(labelText: 'Profissional'))),
+                SizedBox(width: 10),
+                Expanded(child: TextField(decoration: InputDecoration(labelText: 'Data'))),
+                SizedBox(width: 10),
+                Expanded(child: TextField(decoration: InputDecoration(labelText: 'Cliente'))),
+              ],
             ),
-          );
-        },
+            const SizedBox(height: 20),
+            const Expanded(
+              child: Center(
+                child: Text('Resultados da pesquisa aparecerão aqui.'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
