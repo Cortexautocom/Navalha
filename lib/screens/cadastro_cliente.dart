@@ -16,25 +16,6 @@ class _CadastroClientePageState extends State<CadastroClientePage> {
   final TextEditingController _senhaController = TextEditingController();
 
   String? _salaoSelecionado;
-  List<Map<String, dynamic>> _saloes = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _carregarSaloes();
-  }
-
-  Future<void> _carregarSaloes() async {
-    final snapshot = await FirebaseFirestore.instance.collection('saloes').get();
-    setState(() {
-      _saloes = snapshot.docs.map((doc) {
-        return {
-          'id': doc.id,
-          'nome': doc['nome'],
-        };
-      }).toList();
-    });
-  }
 
   Future<void> _cadastrarCliente() async {
     if (!_formKey.currentState!.validate() || _salaoSelecionado == null) return;
@@ -48,7 +29,10 @@ class _CadastroClientePageState extends State<CadastroClientePage> {
       );
 
       // Salva no Firestore
-      await FirebaseFirestore.instance.collection('clientes').doc(cred.user!.uid).set({
+      await FirebaseFirestore.instance
+          .collection('clientes')
+          .doc(cred.user!.uid)
+          .set({
         'nome': _nomeController.text.trim(),
         'email': _emailController.text.trim(),
         'salaoId': _salaoSelecionado,
@@ -59,7 +43,7 @@ class _CadastroClientePageState extends State<CadastroClientePage> {
         const SnackBar(content: Text("✅ Cliente cadastrado com sucesso!")),
       );
 
-      Navigator.pop(context); // volta para a tela anterior
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("❌ Erro no cadastro: $e")),
@@ -80,37 +64,64 @@ class _CadastroClientePageState extends State<CadastroClientePage> {
               TextFormField(
                 controller: _nomeController,
                 decoration: const InputDecoration(labelText: "Nome"),
-                validator: (v) => v == null || v.isEmpty ? "Digite seu nome" : null,
+                validator: (v) =>
+                    v == null || v.isEmpty ? "Digite seu nome" : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: "E-mail"),
-                validator: (v) => v == null || !v.contains('@') ? "Digite um e-mail válido" : null,
+                validator: (v) =>
+                    v == null || !v.contains('@') ? "Digite um e-mail válido" : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _senhaController,
                 decoration: const InputDecoration(labelText: "Senha"),
                 obscureText: true,
-                validator: (v) => v == null || v.length < 6 ? "Mínimo 6 caracteres" : null,
+                validator: (v) =>
+                    v == null || v.length < 6 ? "Mínimo 6 caracteres" : null,
               ),
               const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Selecione o salão"),
-                items: _saloes.map((s) {
-                  return DropdownMenuItem<String>(
-                    value: s['id'],
-                    child: Text(s['nome']),
+
+              // --- Dropdown lendo da coleção pública ---
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('saloes_publicos')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Text("⚠️ Erro: ${snapshot.error}");
+                  }
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Text("⚠️ Nenhum salão cadastrado ainda.");
+                  }
+
+                  final saloes = snapshot.data!.docs;
+
+                  return DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: "Selecione o salão"),
+                    value: _salaoSelecionado,
+                    items: saloes.map((doc) {
+                      return DropdownMenuItem<String>(
+                        value: doc.id,
+                        child: Text(doc['nomeSalao']),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _salaoSelecionado = val;
+                      });
+                    },
+                    validator: (v) =>
+                        v == null ? "Selecione um salão" : null,
                   );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    _salaoSelecionado = val;
-                  });
                 },
-                validator: (v) => v == null ? "Selecione um salão" : null,
               ),
+
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _cadastrarCliente,
