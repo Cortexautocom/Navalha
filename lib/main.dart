@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/login.dart';
 import 'screens/agendamento.dart';
+import 'screens/tela_inicial.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +21,7 @@ class Navalha extends StatelessWidget {
     return MaterialApp(
       title: 'Navalha',
       theme: ThemeData(primarySwatch: Colors.teal),
-      home: const LoginPage(),
+      home: const TelaInicial(),
       routes: {
         '/agendamento': (_) => const AgendamentoPage(),
       },

@@ -1,68 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'criar_salao.dart';
-import 'cadastro_cliente.dart';
+
+// Importar as telas
+import 'homecliente.dart';
+import 'homeprofissional.dart';
+import 'paineladmin.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final String email;
+  final String senha;
+
+  const LoginPage({
+    super.key,
+    this.email = "",
+    this.senha = "",
+  });
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _senhaController = TextEditingController();
+  late TextEditingController _emailController;
+  late TextEditingController _senhaController;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(text: widget.email);
+    _senhaController = TextEditingController(text: widget.senha);
+  }
 
   Future<void> _login() async {
+    setState(() => _loading = true);
+
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      // 1. Autenticar usuário
+      UserCredential cred = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _senhaController.text.trim(),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Login realizado com sucesso")),
-      );
+      User? user = cred.user;
+      if (user == null) throw Exception("Erro ao logar.");
 
-      // TODO: Redirecionar para a tela certa (cliente, admin ou profissional)
+      final uid = user.uid;
+
+      // 2. Buscar em "usuarios"
+      final usuarioDoc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(uid)
+          .get();
+
+      if (usuarioDoc.exists) {
+        final data = usuarioDoc.data()!;
+        final tipo = data['tipo'];
+
+        if (tipo == 'administrador') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => PainelAdmin()),
+          );
+          return;
+        } else if (tipo == 'profissional') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => HomeProfissional()),
+          );
+          return;
+        }
+      }
+
+      // 3. Se não achou em usuarios, buscar em clientes
+      final clienteDoc = await FirebaseFirestore.instance
+          .collection('clientes')
+          .doc(uid)
+          .get();
+
+      if (clienteDoc.exists) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => HomeCliente()),
+        );
+        return;
+      }
+
+      // 4. Se não achou em nenhum lugar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Usuário não encontrado no sistema.")),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("❌ Erro no login: $e")),
       );
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _abrirCadastro() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Cadastrar como:"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // fecha o diálogo
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CadastroClientePage()),
-              );
-            },
-            child: const Text("Cliente"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // fecha o diálogo
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CriarSalaoPage()),
-              );
-            },
-            child: const Text("Dono de Salão"),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -79,19 +115,16 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextField(
               controller: _senhaController,
-              decoration: const InputDecoration(labelText: "Senha"),
               obscureText: true,
+              decoration: const InputDecoration(labelText: "Senha"),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _login,
-              child: const Text("Entrar"),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: _abrirCadastro,
-              child: const Text("Cadastrar"),
-            ),
+            _loading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: _login,
+                    child: const Text("Entrar"),
+                  ),
           ],
         ),
       ),
