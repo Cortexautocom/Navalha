@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'screens/login.dart';
 import 'screens/agendamento.dart';
 import 'screens/tela_inicial.dart';
 
@@ -21,10 +20,12 @@ class Navalha extends StatelessWidget {
     return MaterialApp(
       title: 'Navalha',
       theme: ThemeData(primarySwatch: Colors.teal),
-      home: const TelaInicial(),
+      initialRoute: '/tela_inicial',
       routes: {
+        '/tela_inicial': (_) => const TelaInicial(),          
         '/agendamento': (_) => const AgendamentoPage(),
       },
     );
   }
 }
+
