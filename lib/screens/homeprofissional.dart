@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/topbar.dart';
+
 
 class HomeProfissional extends StatelessWidget {
   const HomeProfissional({super.key});
@@ -6,10 +8,25 @@ class HomeProfissional extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Agenda do Profissional')),
-      body: const Center(
-        child: Text('Aqui aparecerão os próximos cortes agendados.'),
+      appBar: TopBar(title: "Navalha", drawer: const SizedBox()),
+      drawer: Drawer(
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: const [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue),
+              child: Text(
+                "Menu (em breve)",
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+            // Futuramente adicionamos os itens do menu aqui
+          ],
+        ),
       ),
+      body: const Center(child: Text("Bem-vindo, profissional")),
     );
+
   }
 }

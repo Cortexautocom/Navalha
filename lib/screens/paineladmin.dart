@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'cadastro_profissional.dart';
+import '../widgets/topbar.dart';
+
 
 class PainelAdmin extends StatefulWidget {
   const PainelAdmin({super.key});
@@ -46,7 +49,7 @@ class _PainelAdminState extends State<PainelAdmin> {
       case "Agendamentos":
         return _buildAgendamentos();
       case "Profissionais cadastrados":
-        return const Center(child: Text("📋 Lista de profissionais"));
+        return _buildProfissionais();
       case "Outros gestores":
         return const Center(child: Text("👥 Lista de gestores"));
       case "Gerenciar planos":
@@ -122,6 +125,71 @@ class _PainelAdminState extends State<PainelAdmin> {
     );
   }
 
+
+  Widget _buildProfissionais() {
+    if (_salaoId == null) {
+      return const Center(child: Text("⚠️ Nenhum salão vinculado."));
+    }
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CadastroProfissionalPage(salaoId: _salaoId!),
+              ),
+            );
+          },
+          child: const Text("Cadastrar Profissional"),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          "Profissionais do Salão",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const Divider(),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('usuarios')
+                .where('tipo', isEqualTo: 'profissional')
+                .where('salaoId', isEqualTo: _salaoId)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Center(child: Text("❌ Erro ao carregar profissionais."));
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text("⚠️ Nenhum profissional cadastrado ainda."));
+              }
+
+              final docs = snapshot.data!.docs;
+
+              return ListView.builder(
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final prof = docs[index].data() as Map<String, dynamic>;
+                  return ListTile(
+                    leading: const Icon(Icons.person),
+                    title: Text(prof['nomeCompleto'] ?? "Sem nome"),
+                    subtitle: Text(prof['email'] ?? "Sem e-mail"),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+
   // 🔹 Busca nomes de cliente e profissional
   Future<Map<String, String>> _buscarNomes(
       String clienteId, String profissionalId) async {
@@ -164,56 +232,7 @@ class _PainelAdminState extends State<PainelAdmin> {
 
     return Scaffold(
       // TOP BAR
-      appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: const Text("Navalha"),
-        centerTitle: true,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.account_circle),
-            onSelected: (value) async {
-              if (value == "Perfil") {
-                // ação do perfil
-              } else if (value == "Sair") {
-                await FirebaseAuth.instance.signOut();
-                showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text("Você foi desconectado"),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context); // fecha modal
-                          Navigator.pushReplacementNamed(context, "/tela_inicial");
-                        },
-                        child: const Text("OK"),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: "Perfil",
-                child: Text("Perfil"),
-              ),
-              const PopupMenuItem(
-                value: "Sair",
-                child: Text("Sair"),
-              ),
-            ],
-          ),
-
-        ],
-      ),
-
-      // DRAWER (menu lateral 80%)
+      appBar: TopBar(title: "Navalha", drawer: const SizedBox()),
       drawer: Drawer(
         width: MediaQuery.of(context).size.width * 0.8,
         child: ListView(
@@ -221,10 +240,7 @@ class _PainelAdminState extends State<PainelAdmin> {
           children: [
             const DrawerHeader(
               decoration: BoxDecoration(color: Colors.blue),
-              child: Text(
-                "Menu",
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
+              child: Text("Menu", style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
             ListTile(
               leading: const Icon(Icons.calendar_today),
@@ -261,6 +277,7 @@ class _PainelAdminState extends State<PainelAdmin> {
           ],
         ),
       ),
+
 
       // CONTEÚDO PRINCIPAL
       body: _getPagina(),
