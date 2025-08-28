@@ -15,6 +15,8 @@ class PainelAdmin extends StatefulWidget {
 class _PainelAdminState extends State<PainelAdmin> {
   String _paginaAtual = "Agendamentos";
   String? _salaoId;
+  String _filtroData = "Hoje";
+  DateTime _dataSelecionada = DateTime.now();
   bool _loading = true;
 
   @override
@@ -65,65 +67,56 @@ class _PainelAdminState extends State<PainelAdmin> {
       return const Center(child: Text("⚠️ Nenhum salão vinculado."));
     }
 
-    final hoje = DateTime.now();
-    final dataHoje =
-        "${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}";
+    return Column(
+      children: [
+        // Dropdown de filtro
+        DropdownButton<String>(
+          value: _filtroData,
+          items: const [
+            DropdownMenuItem(value: "Hoje", child: Text("Hoje")),
+            DropdownMenuItem(value: "Amanhã", child: Text("Amanhã")),
+            DropdownMenuItem(value: "Escolher", child: Text("Escolher data")),
+            DropdownMenuItem(value: "Todos", child: Text("Todos")), // 👈 novo
+          ],
+          onChanged: (value) async {
+            if (value == null) return;
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('agendamentos')
-          .where('salaoId', isEqualTo: _salaoId)
-          .where('data', isEqualTo: dataHoje)
-          .orderBy('hora')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text("❌ Erro ao carregar agendamentos."));
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text("⚠️ Nenhum agendamento para hoje."));
-        }
-
-        final agendamentos = snapshot.data!.docs;
-
-        return ListView.builder(
-          itemCount: agendamentos.length,
-          itemBuilder: (context, index) {
-            final ag = agendamentos[index].data() as Map<String, dynamic>;
-
-            final hora = ag['hora'] ?? "Sem hora";
-            final clienteId = ag['clienteId'];
-            final profissionalId = ag['profissionalId'];
-
-            return FutureBuilder<Map<String, String>>(
-              future: _buscarNomes(clienteId, profissionalId),
-              builder: (context, snapshotNomes) {
-                if (!snapshotNomes.hasData) {
-                  return const ListTile(
-                    leading: Icon(Icons.access_time),
-                    title: Text("Carregando..."),
-                  );
+            if (value == "Escolher") {
+              final data = await showDatePicker(
+                context: context,
+                initialDate: _dataSelecionada,
+                firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+              );
+              if (data != null) {
+                setState(() {
+                  _dataSelecionada = data;
+                  _filtroData = "Escolher";
+                });
+              }
+            } else {
+              setState(() {
+                _filtroData = value;
+                if (value == "Hoje") {
+                  _dataSelecionada = DateTime.now();
+                } else if (value == "Amanhã") {
+                  _dataSelecionada = DateTime.now().add(const Duration(days: 1));
                 }
-
-                final nomes = snapshotNomes.data!;
-                final clienteNome = nomes['cliente'] ?? "Cliente";
-                final profissionalNome = nomes['profissional'] ?? "Profissional";
-
-                return ListTile(
-                  leading: const Icon(Icons.access_time),
-                  title: Text("$hora - $clienteNome"),
-                  subtitle: Text("Profissional: $profissionalNome"),
-                );
-              },
-            );
+              });
+            }
           },
-        );
-      },
+        ),
+
+        const SizedBox(height: 10),
+
+        // Lista de agendamentos filtrados
+        Expanded(
+          child: _buildListaAgendamentos(),
+        ),
+      ],
     );
   }
+
 
 
   Widget _buildProfissionais() {
@@ -188,6 +181,79 @@ class _PainelAdminState extends State<PainelAdmin> {
       ],
     );
   }
+
+  Widget _buildListaAgendamentos() {
+    if (_salaoId == null) {
+      return const Center(child: Text("⚠️ Nenhum salão vinculado."));
+    }
+
+    final dataFormatada =
+        "${_dataSelecionada.year}-${_dataSelecionada.month.toString().padLeft(2, '0')}-${_dataSelecionada.day.toString().padLeft(2, '0')}";
+
+    // Query base
+    Query query = FirebaseFirestore.instance
+        .collection('agendamentos')
+        .where('salaoId', isEqualTo: _salaoId);
+
+    // Se não for "Todos", aplica filtro de data
+    if (_filtroData != "Todos") {
+      query = query.where('data', isEqualTo: dataFormatada);
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: query.orderBy('hora').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          print("❌ Erro ao buscar agendamentos: ${snapshot.error}");
+          return const Center(child: Text("❌ Erro ao carregar agendamentos."));
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text("⚠️ Nenhum agendamento encontrado."));
+        }
+
+        final agendamentos = snapshot.data!.docs;
+
+        return ListView.builder(
+          itemCount: agendamentos.length,
+          itemBuilder: (context, index) {
+            final ag = agendamentos[index].data() as Map<String, dynamic>;
+
+            final hora = ag['hora'] ?? "Sem hora";
+            final clienteId = ag['clienteId'];
+            final profissionalId = ag['profissionalId'];
+
+            return FutureBuilder<Map<String, String>>(
+              future: _buscarNomes(clienteId, profissionalId),
+              builder: (context, snapshotNomes) {
+                if (!snapshotNomes.hasData) {
+                  return const ListTile(
+                    leading: Icon(Icons.access_time),
+                    title: Text("Carregando..."),
+                  );
+                }
+
+                final nomes = snapshotNomes.data!;
+                final clienteNome = nomes['cliente'] ?? "Cliente";
+                final profissionalNome = nomes['profissional'] ?? "Profissional";
+
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.access_time),
+                    title: Text("$hora - $clienteNome"),
+                    subtitle: Text("Profissional: $profissionalNome"),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
 
 
   // 🔹 Busca nomes de cliente e profissional

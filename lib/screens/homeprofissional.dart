@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/topbar.dart';
 
-
 class HomeProfissional extends StatelessWidget {
   const HomeProfissional({super.key});
 
@@ -21,12 +20,16 @@ class HomeProfissional extends StatelessWidget {
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
-            // Futuramente adicionamos os itens do menu aqui
+            // futuramente adicionaremos os itens do menu
           ],
         ),
       ),
-      body: const Center(child: Text("Bem-vindo, profissional")),
+      body: const Center(
+        child: Text(
+          "Bem-vindo, profissional",
+          style: TextStyle(fontSize: 18),
+        ),
+      ),
     );
-
   }
 }
